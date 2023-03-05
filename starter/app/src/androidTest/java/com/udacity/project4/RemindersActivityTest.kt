@@ -39,8 +39,8 @@ import org.koin.test.get
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class RemindersActivityTest :
-    AutoCloseKoinTest() {// Extended Koin Test - embed autoclose @after method to close Koin after every test
-
+    AutoCloseKoinTest() {
+    // Extended Koin Test - embed autoclose @after method to close Koin after every test
     private lateinit var repository: ReminderDataSource
     private lateinit var appContext: Application
     private val dataBindingIdlingResource = DataBindingIdlingResource()
@@ -54,6 +54,7 @@ class RemindersActivityTest :
         IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
         IdlingRegistry.getInstance().register(dataBindingIdlingResource)
     }
+
     /**
      * Unregister your Idling Resource so it can be garbage collected and does not leak any memory.
      */
@@ -100,6 +101,10 @@ class RemindersActivityTest :
         }
     }
 
+    @After
+    fun clear() = runBlocking {
+        repository.deleteAllReminders()
+    }
 
     private fun getActivity(activityScenario: ActivityScenario<RemindersActivity>): Activity? {
         var activity: Activity? = null
@@ -110,12 +115,11 @@ class RemindersActivityTest :
     }
 
     @Test
-    fun reminderSaved_ToastMessage(){
+    fun reminderSaved_ToastMessage() {
         // start the reminders screen by get the activity that we are testing
-
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
-        // idling
 
+        // idling
         dataBindingIdlingResource.monitorActivity(activityScenario)
         //click on fab button
         onView(withId(R.id.addReminderFAB)).perform(click())
@@ -125,30 +129,24 @@ class RemindersActivityTest :
         onView(withId(R.id.map_selected)).perform(ViewActions.longClick())
         //click save to close the map and save the selected location
         onView(withId(R.id.save)).perform(click())
-
         // so after click save we go back and add title
-        onView(withId(R.id.reminderTitle))
-            .perform(ViewActions.replaceText("Title 2"))
+        onView(withId(R.id.reminderTitle)).perform(ViewActions.replaceText("Title 2"))
         // add description
-        onView(withId(R.id.reminderDescription))
-            .perform(ViewActions.replaceText(" Description 2"))
+        onView(withId(R.id.reminderDescription)).perform(ViewActions.replaceText(" Description 2"))
         //click on save reminder
         onView(withId(R.id.saveReminder)).perform(click())
         // check for message
-        onView(withText(R.string.reminder_saved))
-            .inRoot(
-                RootMatchers.withDecorView(
-                    CoreMatchers.not(
-                        CoreMatchers.`is`(
-                            getActivity(
-                                activityScenario
-                            )!!.window.decorView
-                        )
+        onView(withText(R.string.reminder_saved)).inRoot(
+            RootMatchers.withDecorView(
+                CoreMatchers.not(
+                    CoreMatchers.`is`(
+                        getActivity(
+                            activityScenario
+                        )!!.window.decorView
                     )
                 )
             )
-            .check(matches(isDisplayed()))
-        // Make sure the activity is closed before resetting the db:
+        ).check(matches(isDisplayed()))
 
         activityScenario.close()
     }
@@ -161,32 +159,23 @@ class RemindersActivityTest :
 
         //click on fab button
         onView(withId(R.id.addReminderFAB)).perform(click())
-
-        onView(withId(R.id.reminderTitle))
-            .perform(ViewActions.replaceText("Title 2"))
+        onView(withId(R.id.reminderTitle)).perform(ViewActions.replaceText("Title 2"))
         // add description
-        onView(withId(R.id.reminderDescription))
-            .perform(ViewActions.replaceText(" Description 2"))
-
+        onView(withId(R.id.reminderDescription)).perform(ViewActions.replaceText(" Description 2"))
         // Confirm that if we click back button once, we end up back at the task reminder list page
         onView(isRoot()).perform(ViewActions.pressBack())
         // if addReminderFab is appear so we are in the reminder list page
         onView(withId(R.id.addReminderFAB)).check(matches(isDisplayed()))
 
-        // When using ActivityScenario.launch, always call close()
         activityScenario.close()
     }
-
-
-
-
 
     @Test
     fun reminderSavedWithNoSelectedLocation_ToastMessage() {
         // start the reminders screen by get the activity that we are testing
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
-        // idling
 
+        // idling
         dataBindingIdlingResource.monitorActivity(activityScenario)
         // click on fab button
         onView(withId(R.id.addReminderFAB)).perform(click())
@@ -199,67 +188,47 @@ class RemindersActivityTest :
         // here if we don't put the location the snackbar shows  error with please select  location
         val snackBarMessage = appContext.getString(R.string.err_select_location)
         // check for snackbar
-        onView(withText(snackBarMessage))
-            .check(matches(isDisplayed()))
+        onView(withText(snackBarMessage)).check(matches(isDisplayed()))
 
-        // Make sure the activity is closed before resetting the db:
         activityScenario.close()
-
-
     }
+
     @Test
-    fun reminderNoTitle(){
+    fun reminderNoTitle() {
         // start the reminders screen by get the activity that we are testing
-
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
-        // idling
 
+        // idling
         dataBindingIdlingResource.monitorActivity(activityScenario)
         // click on the FAB add reminder
-
-        onView(withId(R.id.addReminderFAB))
-            .perform(click())
-
+        onView(withId(R.id.addReminderFAB)).perform(click())
         // put text into edittext
-
         onView(withId(R.id.reminderDescription)).perform(ViewActions.typeText("description1"))
         // close the keyboard
-
         Espresso.closeSoftKeyboard()
         //click on save button
-
-        onView(withId(R.id.saveReminder))
-            .perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
         // here if we don't put the title the snackbar shows with please select  title
-
         val snackBarMessage = appContext.getString(R.string.err_enter_title)
         // check for snackbar
+        onView(withText(snackBarMessage)).check(matches(isDisplayed()))
 
-        onView(withText(snackBarMessage))
-            .check(matches(isDisplayed()))
-        // Make sure the activity is closed before resetting the db:
         activityScenario.close()
     }
+
     @Test
     fun remindersScreen_clickOnFab_opensSaveReminderScreen() = runBlocking {
         // start the reminders screen by get the activity that we are testing
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+
         // idling
         dataBindingIdlingResource.monitorActivity(activityScenario)
-
         // click on the FAB add reminder
         onView(withId(R.id.addReminderFAB)).perform(click())
-
         // check that we are on the SaveReminder screen
         onView(withId(R.id.reminderDescription)).check(matches(isDisplayed()))
 
-        // Make sure the activity is closed before resetting the db:
         activityScenario.close()
-    }
-
-    @After
-    fun clear()= runBlocking{
-        repository.deleteAllReminders()
     }
 
 }

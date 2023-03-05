@@ -49,10 +49,8 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
     private val dataBindingIdlingResource = DataBindingIdlingResource()
 
     // Executes each task synchronously using Architecture Components.
-
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
-
 
     @Before
     fun setup(){
@@ -95,6 +93,13 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         }
 
     }
+
+    @After
+    fun tearDown() {
+        // stop koin
+        stopKoin()
+    }
+
     /**
      * Idling resources tell Espresso that the app is idle or busy. This is needed when operations
      * are not scheduled in the main Looper (for example when executed on a different thread).
@@ -112,7 +117,6 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
         IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
     }
-
 
     @Test
     fun loadReminders_navigate() {
@@ -146,19 +150,14 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
             // save reminder
             repo.saveReminder(reminder)
 
-            // WHEN - ReminderListFragment is displayed
+            // WHEN
             val scenario =  launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
             dataBindingIdlingResource.monitorFragment(scenario)
 
-            // THEN - the reminder is displayed
+            // THEN
             onView(withText(reminder.title)).check(matches(isDisplayed()))
             onView(withText(reminder.location)).check(matches(isDisplayed()))
             onView(withText(reminder.description)).check((matches(isDisplayed())))
         }
-    }
-    @After
-    fun tearDown() {
-        // stop koin
-        stopKoin()
     }
 }

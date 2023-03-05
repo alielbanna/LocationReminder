@@ -9,7 +9,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
-// main coroutines to switch to main thread because we are testing
 @ExperimentalCoroutinesApi
 class MainCoroutineRule(val dispatcher: TestCoroutineDispatcher = TestCoroutineDispatcher()):
     TestWatcher(),

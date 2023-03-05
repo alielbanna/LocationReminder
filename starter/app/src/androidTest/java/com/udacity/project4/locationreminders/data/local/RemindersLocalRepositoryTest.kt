@@ -44,9 +44,16 @@ class RemindersLocalRepositoryTest {
             )
     }
 
+    @After
+    // after test close data base
+    fun toCloseDB(){
+        // after test close data base
+        database.close()
+    }
+
     @Test
     fun getReminders() = runBlocking {
-        //create two reminder object
+        // GIVEN
         val reminder = ReminderDTO(
             "location", "location Description", "00 Location",
             20.000, 32.000
@@ -78,11 +85,6 @@ class RemindersLocalRepositoryTest {
             "Title", "Description", " Location",
             20.210, 20.120
         )
-        val reminder2 = ReminderDTO(
-            "location2", "location Description2", "002 Location",
-            21.000, 31.000
-        )
-        // add two reminder using repository
 
         repository.saveReminder(reminder)
         //delete all reminders
@@ -96,14 +98,6 @@ class RemindersLocalRepositoryTest {
         TestCase.assertTrue (loaded2 is Result.Error)
         loaded2 as Result.Error
         TestCase.assertTrue (loaded2.message == "Reminder not found!")
-
     }
 
-
-
-    @After
-    // after test close data base
-    fun toCloseDB(){
-        // after test close data base
-        database.close()
-    }}
+}

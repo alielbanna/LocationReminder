@@ -21,6 +21,7 @@ import org.robolectric.annotation.Config
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
 class RemindersListViewModelTest {
+
     // Executes each task synchronously using Architecture Components.
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
@@ -47,20 +48,17 @@ class RemindersListViewModelTest {
         )
     }
 
-
-
     @Test
     fun sandbarError() {
-        // GIVEN - there's a problem loading reminders
+        // GIVEN
         // Make the repository return errors so the snack is not null
         fakeDataSource.setReturnError(true)
 
-        // WHEN - we want to load rhe reminders
+        // WHEN
         remindersListViewModel.loadReminders()
 
-        // THEN - It's an error, there's a snackBar
+        // THEN
         // using hamcrest is for more readability
-
         assertThat(remindersListViewModel.showSnackBar.getOrAwaitValue(),`is`("Test Exception"))
     }
 
@@ -79,7 +77,5 @@ class RemindersListViewModelTest {
         // THEN - when the dispatcher is resumed, showboating is false
         assertThat(remindersListViewModel.showLoading.getOrAwaitValue(), `is`(false))
     }
-
-
 
 }

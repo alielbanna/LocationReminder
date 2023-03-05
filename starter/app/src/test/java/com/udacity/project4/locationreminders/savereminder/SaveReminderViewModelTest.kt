@@ -22,6 +22,7 @@ import org.robolectric.annotation.Config
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
 class SaveReminderViewModelTest {
+
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
 
@@ -46,8 +47,8 @@ class SaveReminderViewModelTest {
 
     @Test
     fun whenIncompleteInfo_validationReturnsTrue() {
+
         // GIVEN
-        //  reminder fields if location and title  not null should return true
         saveReminderViewModel.onClear()
         saveReminderViewModel.reminderTitle.value = "location"
         saveReminderViewModel.reminderDescription.value = "some description"
@@ -55,7 +56,7 @@ class SaveReminderViewModelTest {
         saveReminderViewModel.longitude.value = 20.0
         saveReminderViewModel.latitude.value = 10.0
 
-        // WHEN - attempting to validate
+        // WHEN
         val result = saveReminderViewModel.validateEnteredData(
             ReminderDataItem(
                 saveReminderViewModel.reminderTitle.value,
@@ -67,18 +68,14 @@ class SaveReminderViewModelTest {
             )
         )
 
-        // THEN - result is false
-        // using hamcrest is for more readability
+        // THEN
         MatcherAssert.assertThat(result, CoreMatchers.`is`(true))
-
     }
-
-
 
     @Test
     fun whenIncompleteInfo_validationReturnsNull() {
+
         // GIVEN
-        //  reminder fields if location  is null should return false
         saveReminderViewModel.onClear()
         saveReminderViewModel.reminderTitle.value = "location"
         saveReminderViewModel.reminderDescription.value = "some description"
@@ -86,7 +83,7 @@ class SaveReminderViewModelTest {
         saveReminderViewModel.longitude.value = 15.0
         saveReminderViewModel.latitude.value = 10.0
 
-        // WHEN - attempting to validate
+        // WHEN
         val result = saveReminderViewModel.validateEnteredData(
             ReminderDataItem(
                 saveReminderViewModel.reminderTitle.value,
@@ -98,10 +95,8 @@ class SaveReminderViewModelTest {
             )
         )
 
-        // THEN - result is false
-        // using hamcrest is for more readability
+        // THEN
         MatcherAssert.assertThat(result, CoreMatchers.`is`(false))
-
     }
 
 }

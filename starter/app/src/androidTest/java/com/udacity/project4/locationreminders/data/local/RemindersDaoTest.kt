@@ -39,30 +39,29 @@ class RemindersDaoTest {
         dao = database.reminderDao()
     }
 
-    @Test
-    fun saveReminder() = runBlocking{
-        // GIVEN create reminder
-        val reminder = ReminderDTO(
-            "location", "Location Description", "My Location",
-            50.0, 60.500
-        )
-
-        dao.saveReminder(reminder)
-        // WHEN save Reminder that we created
-        val loaded  = dao.getReminderById(reminder.id)
-        // THEN check if the Reminder was saved
-        assertThat(reminder.id, `is`(loaded!!.id))
-        assertThat(reminder.title, `is`(loaded.title))
-        assertThat(reminder.description, `is`(loaded.description))
-        assertThat(reminder.latitude, `is`(loaded.latitude))
-        assertThat(reminder.longitude, `is`(loaded.longitude))
-    }
-
     @After
     fun toCloseDB(){
         // after test close data base
         database.close()
     }
 
+    @Test
+    fun saveReminder() = runBlocking{
+        // GIVEN
+        val reminder = ReminderDTO(
+            "location", "Location Description", "My Location",
+            50.0, 60.500
+        )
+
+        dao.saveReminder(reminder)
+        // WHEN
+        val loaded  = dao.getReminderById(reminder.id)
+        // THEN
+        assertThat(reminder.id, `is`(loaded!!.id))
+        assertThat(reminder.title, `is`(loaded.title))
+        assertThat(reminder.description, `is`(loaded.description))
+        assertThat(reminder.latitude, `is`(loaded.latitude))
+        assertThat(reminder.longitude, `is`(loaded.longitude))
+    }
 
 }
