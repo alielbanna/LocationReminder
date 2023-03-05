@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "61268780022",
+    "project_id": "location-remiber",
+    "storage_bucket": "location-remiber.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61268780022:android:184d52aa4c7d5da6285dd7",
+        "android_client_info": {
+          "package_name": "com.udacity.project4"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "61268780022-i3it8gus2kouepn19u9q2f14dnckl3cq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.udacity.project4",
+            "certificate_hash": "eedce7e0d0fd23f9f5e252a28a6bd89f5b141888"
+          }
+        },
+        {
+          "client_id": "61268780022-d6r2n338ja444554ph3lcnmid7v2pckv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZ764TNPY_71zvbgvZkBq3m5fNV_zpIbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "61268780022-d6r2n338ja444554ph3lcnmid7v2pckv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
