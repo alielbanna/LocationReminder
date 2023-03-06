@@ -4,38 +4,38 @@ import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.dto.Result
 
 //Use FakeDataSource that acts as a test double to the LocalDataSource
-class FakeDataSource (var reminders: MutableList<ReminderDTO> = mutableListOf()) :
-    ReminderDataSource {
-
-    private var returnError = false
-
-    fun setReturnError(value: Boolean) {
-        returnError = value
+class FakeDataSource : ReminderDataSource {
+    private var reminderDTOMutableList = mutableListOf<ReminderDTO>()
+    private var returnError: Boolean = false
+    fun setReturnError(item: Boolean) {
+        returnError = item
     }
-    override suspend fun getReminders(): Result<List<ReminderDTO>> {
-        if (returnError)
-            return Result.Error("Test Exception")
 
-        return Result.Success(ArrayList(reminders))    }
+    override suspend fun getReminders(): Result<List<ReminderDTO>> {
+        return if (returnError) {
+            Result.Error("error")
+        } else {
+            Result.Success<List<ReminderDTO>>(reminderDTOMutableList)
+        }
+    }
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
-        reminders.add(reminder)
+        reminderDTOMutableList.add(reminder)
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
-        if (returnError)
-            return Result.Error("Test Exception")
-
-        reminders.firstOrNull { it.id == id }?.let {
-            return Result.Success(it)
+        return when {
+            returnError -> { Result.Error("error") }
+            else -> {
+                when (val reminder = reminderDTOMutableList.find { it.id == id }) {
+                    null -> { Result.Error("Not Found") }
+                    else -> { Result.Success(reminder) }
+                }
+            }
         }
-        return Result.Error("Reminder not found!")
-
     }
 
     override suspend fun deleteAllReminders() {
-        reminders.clear()
+        reminderDTOMutableList.removeAll(reminderDTOMutableList)
     }
-
-
 }

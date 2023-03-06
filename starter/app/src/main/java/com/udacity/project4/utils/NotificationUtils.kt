@@ -4,8 +4,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.udacity.project4.BuildConfig
 import com.udacity.project4.R
@@ -33,6 +35,13 @@ fun sendNotification(context: Context, reminderDataItem: ReminderDataItem) {
 
     val intent = ReminderDescriptionActivity.newIntent(context.applicationContext, reminderDataItem)
 
+    val resIntent=Intent(context.applicationContext,ReminderDescriptionActivity::class.java)
+    val resPendingintent:PendingIntent?=TaskStackBuilder.create(context).run {
+        addNextIntentWithParentStack(resIntent)
+        getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
+
     //create a pending intent that opens ReminderDescriptionActivity when the user clicks on the notification
     val stackBuilder = TaskStackBuilder.create(context)
         .addParentStack(ReminderDescriptionActivity::class.java)
@@ -50,6 +59,7 @@ fun sendNotification(context: Context, reminderDataItem: ReminderDataItem) {
         .build()
 
     notificationManager.notify(getUniqueId(), notification)
+//    with(NotificationManagerCompat.from(this)){notify(NOTIFICATION_CHANNEL_ID,notification.build())}
 }
 
 private fun getUniqueId() = ((System.currentTimeMillis() % 10000).toInt())

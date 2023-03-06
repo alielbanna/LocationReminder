@@ -7,9 +7,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.getOrAwaitValue
+import junit.framework.TestCase.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runBlockingTest
 import org.hamcrest.CoreMatchers.*
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,65 +20,66 @@ import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
 import org.robolectric.annotation.Config
 
-@Config(sdk = [Build.VERSION_CODES.P])
-@ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
+@ExperimentalCoroutinesApi
+@Config(maxSdk = Build.VERSION_CODES.P)
+
 class RemindersListViewModelTest {
 
-    // Executes each task synchronously using Architecture Components.
-    @get:Rule
-    var instantExecutorRule = InstantTaskExecutorRule()
+    private lateinit var fakeDataSource: FakeDataSource
+    private lateinit var remindersListViewModel: RemindersListViewModel
 
-    // Set the main coroutines dispatcher for unit testing.
+    @get:Rule
+    var instantTaskExecutorRule = InstantTaskExecutorRule()
+
+
+    @ExperimentalCoroutinesApi
     @get:Rule
     var mainCoroutineRule = MainCoroutineRule()
 
-    // Subject under test
-    private lateinit var remindersListViewModel: RemindersListViewModel
 
-    // Use a fake repository to be injected into the view model.
-    private lateinit var fakeDataSource: FakeDataSource
     @Before
-    fun setupViewModel() {
+    fun setup_VIEWMODEL() {
         stopKoin()
-        // Initialise the repository with no reminders.
         fakeDataSource = FakeDataSource()
+        remindersListViewModel =
+            RemindersListViewModel(ApplicationProvider.getApplicationContext(), fakeDataSource)
+    }
 
-        // using fake data source in ListViewModel by inject because it's test double
-        // becouse we don't have lifecycle observer we use live data util (use life observeForever)
-        remindersListViewModel = RemindersListViewModel(
-            ApplicationProvider.getApplicationContext(), fakeDataSource
-        )
+    @After
+    fun shutDown_VIEWMODEL() {
+        stopKoin()
     }
 
     @Test
-    fun sandbarError() {
-        // GIVEN
-        // Make the repository return errors so the snack is not null
+    fun shouldReturnEmpty() = mainCoroutineRule.runBlockingTest {
+        fakeDataSource.deleteAllReminders()
+        remindersListViewModel.loadReminders()
+        val res = remindersListViewModel.showSnackBar.value
+        assertThat(res, `is`(nullValue()))
+        assertThat(remindersListViewModel.showNoData.value, `is`(true))
+    }
+
+    @Test
+    fun checkError() {
+        remindersListViewModel.loadReminders()
         fakeDataSource.setReturnError(true)
-
-        // WHEN
-        remindersListViewModel.loadReminders()
-
-        // THEN
-        // using hamcrest is for more readability
-        assertThat(remindersListViewModel.showSnackBar.getOrAwaitValue(),`is`("Test Exception"))
+        assertEquals("error", remindersListViewModel.showSnackBar.getOrAwaitValue())
     }
 
     @Test
-    fun loadReminders_loading() {
-        // GIVEN - loading reminders
-        //pause the dispatcher
-        mainCoroutineRule.pauseDispatcher()
-        //get reminders
+    fun remindersEmpty() = runBlockingTest {
         remindersListViewModel.loadReminders()
-
-        // WHEN - the dispatcher is paused, showLoading is true
-        assertThat(remindersListViewModel.showLoading.getOrAwaitValue(), `is`(true))
-        mainCoroutineRule.resumeDispatcher()
-
-        // THEN - when the dispatcher is resumed, showboating is false
-        assertThat(remindersListViewModel.showLoading.getOrAwaitValue(), `is`(false))
+        fakeDataSource.deleteAllReminders()
+        assertThat(remindersListViewModel.showNoData.value, `is`(true))
     }
 
+    @Test
+    fun checkLoading() = mainCoroutineRule.runBlockingTest {
+        assertTrue(remindersListViewModel.showLoading.getOrAwaitValue())
+        mainCoroutineRule.pauseDispatcher()
+        remindersListViewModel.loadReminders()
+        mainCoroutineRule.resumeDispatcher()
+        assertFalse(remindersListViewModel.showLoading.getOrAwaitValue())
+    }
 }

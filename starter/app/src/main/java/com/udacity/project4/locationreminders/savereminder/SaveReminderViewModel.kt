@@ -3,6 +3,7 @@ package com.udacity.project4.locationreminders.savereminder
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseViewModel
@@ -18,6 +19,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     val reminderDescription = MutableLiveData<String>()
     val reminderSelectedLocationStr = MutableLiveData<String>()
     val selectedPOI = MutableLiveData<PointOfInterest>()
+    val locIsCon=MutableLiveData<Boolean>(false)
     val latitude = MutableLiveData<Double>()
     val longitude = MutableLiveData<Double>()
 
@@ -36,16 +38,12 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
     /**
      * Validate the entered data then saves the reminder data to the DataSource
      */
-    fun validateAndSaveReminder(reminderData: ReminderDataItem): Boolean {
-        // IF VALIDATE ENTERED RETURN TRUE IT IS A VALID ITEM
+    fun validateAndSaveReminder(reminderData: ReminderDataItem):Boolean {
         return if (validateEnteredData(reminderData)) {
-            // THEN SAVE REMINDER AND RETURN TRUE
             saveReminder(reminderData)
             true
-        } else {
-            // IT IS NOT VALID REMINDER
-            false
         }
+        else  false
     }
 
     /**
@@ -66,6 +64,7 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
             )
             showLoading.value = false
             showToast.value = app.getString(R.string.reminder_saved)
+            showSnackBar.value="Geofence added"
             navigationCommand.value = NavigationCommand.Back
         }
     }
@@ -75,14 +74,36 @@ class SaveReminderViewModel(val app: Application, val dataSource: ReminderDataSo
      */
     fun validateEnteredData(reminderData: ReminderDataItem): Boolean {
         if (reminderData.title.isNullOrEmpty()) {
+            showToast.value=app.getString(R.string.err_enter_title)
             showSnackBarInt.value = R.string.err_enter_title
             return false
         }
 
         if (reminderData.location.isNullOrEmpty()) {
+            showToast.value=app.getString(R.string.err_select_location)
             showSnackBarInt.value = R.string.err_select_location
             return false
         }
         return true
+    }
+    fun confirmLoc(latlng : LatLng,Poi:PointOfInterest){
+        //Confirming all the new location data
+        locIsCon.value=false
+        latitude.value=latlng.latitude
+        reminderSelectedLocationStr.value=Poi.name
+
+        longitude.value=latlng.longitude
+        selectedPOI.value=Poi
+        navigationCommand.postValue(NavigationCommand.Back)
+
+    }
+    fun setLocationAsConfiremed(data: Boolean){
+        locIsCon.value= data
+    }
+    fun savePoi(poi:PointOfInterest?){
+        latitude.value=poi?.latLng?.latitude
+        reminderSelectedLocationStr.value=poi?.name
+        longitude.value=poi?.latLng?.longitude
+        selectedPOI.value=poi
     }
 }

@@ -1,18 +1,19 @@
 package com.udacity.project4.locationreminders.data.local
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import androidx.test.platform.app.InstrumentationRegistry
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.dto.Result
-import junit.framework.TestCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineDispatcher
+import org.hamcrest.CoreMatchers
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.MatcherAssert.assertThat
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -20,84 +21,74 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @MediumTest
 class RemindersLocalRepositoryTest {
-    private lateinit var database: RemindersDatabase
-    private lateinit var repository: RemindersLocalRepository
-    private lateinit var remindersDAO: RemindersDao
-    // Executes each task synchronously using Architecture Components.
 
-    @get:Rule
-    var instantExecutorRule = InstantTaskExecutorRule()
+    private val reminderDTO = ReminderDTO("1", "2", "3", 100.0, 120.0)
+    private val reminderDTO1 = ReminderDTO("2", "second", "loc2", 0.0, 0.0)
+    private lateinit var remindersDatabase: RemindersDatabase
+    private lateinit var remindersLocalRepository: RemindersLocalRepository
 
-    //create data base and local repository
     @Before
-    fun createDatabase() {
-        database = Room.inMemoryDatabaseBuilder(
-            InstrumentationRegistry.getInstrumentation().context,
+    fun init_dataBase() {
+        remindersDatabase = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
             RemindersDatabase::class.java
-        )
-            .allowMainThreadQueries()
-            .build()
-        remindersDAO = database.reminderDao()
-        repository =
-            RemindersLocalRepository(
-                remindersDAO
-            )
+        ).allowMainThreadQueries().build()
+        remindersLocalRepository =
+            RemindersLocalRepository(remindersDatabase.reminderDao(), TestCoroutineDispatcher())
     }
 
     @After
-    // after test close data base
-    fun toCloseDB(){
-        // after test close data base
-        database.close()
+    fun close_DataBase() {
+        remindersDatabase.close()
     }
 
     @Test
-    fun getReminders() = runBlocking {
-        // GIVEN
-        val reminder = ReminderDTO(
-            "location", "location Description", "00 Location",
-            20.000, 32.000
-        )
+    fun reminderNotFound() = runBlocking {
+        val result = remindersLocalRepository.getReminder(reminderDTO.id)
+        assertThat(result is Result.Error, `is`(true))
 
-        val reminder2 = ReminderDTO(
-            "location2", "location Description2", "002 Location",
-            21.000, 31.000
-        )
-        // add two reminder using repository
-        repository.saveReminder(reminder)
-        repository.saveReminder(reminder2)
+        result as Result.Error
 
-        //get saved reminder
-        val reminders = repository.getReminders()
-        // check if result success
-        TestCase.assertTrue(reminders is Result.Success)
-        // casting
-        reminders as Result.Success
-        //check if reminders not empty list
-        TestCase.assertTrue(reminders.data.isNotEmpty())
+        assertThat(result.message, `is`("Reminder not found!"))
+
     }
 
     @Test
-    fun error() = runBlocking {
-        //create two reminder object
-
-        val reminder = ReminderDTO(
-            "Title", "Description", " Location",
-            20.210, 20.120
-        )
-
-        repository.saveReminder(reminder)
-        //delete all reminders
-        repository.deleteAllReminders()
-        // check if reminder still in data base but we delete all reminder so that cause error
-        val loaded = repository.getReminder(reminder.id)
-        TestCase.assertTrue (loaded is Result.Error)
-        loaded as Result.Error
-        TestCase.assertTrue (loaded.message == "Reminder not found!")
-        val loaded2 = repository.getReminder(reminder.id)
-        TestCase.assertTrue (loaded2 is Result.Error)
-        loaded2 as Result.Error
-        TestCase.assertTrue (loaded2.message == "Reminder not found!")
+    fun inserting_FindById() = runBlocking {
+        remindersLocalRepository.saveReminder(reminderDTO)
+        val result =
+            remindersLocalRepository.getReminder(reminderDTO.id) as Result.Success<ReminderDTO>
+        val loaded = result.data
+        assertThat(loaded.longitude, `is`(reminderDTO.longitude))
+        assertThat(loaded.latitude, `is`(reminderDTO.latitude))
+        assertThat(loaded, CoreMatchers.notNullValue())
+        assertThat(loaded.id, `is`(reminderDTO.id))
+        assertThat(loaded.description, `is`(reminderDTO.description))
+        assertThat(loaded.location, `is`(reminderDTO.location))
+        assertThat(loaded.title, `is`(reminderDTO.title))
     }
 
+    @Test
+    fun remindersOrNull() = runBlocking {
+        remindersDatabase.reminderDao().saveReminder(reminderDTO1)
+        remindersDatabase.reminderDao().saveReminder(reminderDTO)
+        val result: Result<List<ReminderDTO>> = remindersLocalRepository.getReminders()
+        assertThat(result is Result.Success, `is`(true))
+        if (result is Result.Success) assertThat(result.data.isNotEmpty(), `is`(true))
+    }
+
+    @Test
+    fun add_delete_SingleReminder() = runBlocking {
+        remindersLocalRepository.saveReminder(reminderDTO)
+        remindersLocalRepository.deleteAllReminders()
+        assertThat(remindersLocalRepository.getReminder(reminderDTO.id) is Result.Error, `is`(true))
+    }
+
+    @Test
+    fun deleteAllReminders() = runBlocking {
+        remindersLocalRepository.deleteAllReminders()
+        val res = remindersLocalRepository.getReminders() as Result.Success
+        val dataRes = res.data
+        assertThat(dataRes, `is`(emptyList()))
+    }
 }

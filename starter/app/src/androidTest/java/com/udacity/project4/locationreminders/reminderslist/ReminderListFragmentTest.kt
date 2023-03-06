@@ -1,14 +1,11 @@
 package com.udacity.project4.locationreminders.reminderslist
 
-import android.app.Application
 import android.os.Bundle
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.navigation.NavController
 import androidx.navigation.Navigation
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
@@ -20,144 +17,86 @@ import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
-import com.udacity.project4.util.DataBindingIdlingResource
-import com.udacity.project4.utils.EspressoIdlingResource
-import com.udacity.project4.util.monitorFragment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
-import org.koin.test.AutoCloseKoinTest
-import org.koin.test.get
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
+import org.koin.test.get
+import org.koin.test.AutoCloseKoinTest
 
-@RunWith(AndroidJUnit4::class)
 @ExperimentalCoroutinesApi
 @MediumTest
+@RunWith(AndroidJUnit4::class)
 class ReminderListFragmentTest : AutoCloseKoinTest() {
 
-    private lateinit var repo: ReminderDataSource
-    private lateinit var appContext: Application
-    private val dataBindingIdlingResource = DataBindingIdlingResource()
-
-    // Executes each task synchronously using Architecture Components.
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
+    private val mockNavController = mock(NavController::class.java)
+    private lateinit var remindersListViewModel: RemindersListViewModel
+    private lateinit var reminderDataSource: ReminderDataSource
 
     @Before
-    fun setup(){
-        // stop koin to remove 'A Koin Application has already been started'
+    fun initializationModules() {
         stopKoin()
-        //  use Koin Library as a service locator
-        appContext = ApplicationProvider.getApplicationContext()
-
-        val myModule = module {
+        val module = module {
+            single {
+                SaveReminderViewModel(
+                    ApplicationProvider.getApplicationContext(),
+                    get() as ReminderDataSource
+                )
+            }
             viewModel {
-                //Declare a ViewModel - be later inject into Fragment with dedicated injector using by viewModel()
-
                 RemindersListViewModel(
-                    appContext,
+                    ApplicationProvider.getApplicationContext(),
                     get() as ReminderDataSource
                 )
             }
             single {
-                //This view model is declared singleton to be used across multiple fragments
-
-                SaveReminderViewModel(
-                    get(),
-                    get() as ReminderDataSource
-                )
+                LocalDB.createRemindersDao(ApplicationProvider.getApplicationContext())
             }
             single { RemindersLocalRepository(get()) as ReminderDataSource }
-            single { LocalDB.createRemindersDao(appContext) }
-        }
 
+        }
         startKoin {
-            // start coin with list of my module
-            modules(listOf(myModule))
+            modules(listOf(module))
         }
-        // get repository
-        repo = get()
-        // blocks the current thread until its completion
-        // we need this code to run immediately and so we start clear by delete all reminders
+        reminderDataSource = get()
         runBlocking {
-            repo.deleteAllReminders()
+            reminderDataSource.deleteAllReminders()
         }
-
-    }
-
-    @After
-    fun tearDown() {
-        // stop koin
-        stopKoin()
-    }
-
-    /**
-     * Idling resources tell Espresso that the app is idle or busy. This is needed when operations
-     * are not scheduled in the main Looper (for example when executed on a different thread).
-     */
-    @Before
-    fun registerIdlingResource() {
-        IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
-        IdlingRegistry.getInstance().register(dataBindingIdlingResource)
-    }
-    /**
-     * Unregister your Idling Resource so it can be garbage collected and does not leak any memory.
-     */
-    @After
-    fun unregisterIdlingResource() {
-        IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
-        IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
+        remindersListViewModel =
+            RemindersListViewModel(ApplicationProvider.getApplicationContext(), reminderDataSource)
     }
 
     @Test
-    fun loadReminders_navigate() {
-        // fragment that we are going to test
-        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-        // idling
-        dataBindingIdlingResource.monitorFragment(scenario)
-        // using mock to navigate
-        val navController = mock(NavController::class.java)
-        scenario.onFragment {
-            Navigation.setViewNavController(it.view!!, navController)
-        }
-        // WHEN - Click on the fab to add first list item
+    fun dataDisplayed() {
+        launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        onView(withText("No Data")).check(matches(isDisplayed()))
+    }
+
+    @Test
+    fun navigateOnclick() {
+        val sec = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        sec.onFragment { Navigation.setViewNavController(it.view!!, mockNavController) }
         onView(withId(R.id.addReminderFAB)).perform(click())
-        // THEN - Verify that we navigate to the first reminder screen
-        verify(navController).navigate(ReminderListFragmentDirections.toSaveReminder())
+        verify(mockNavController).navigate(ReminderListFragmentDirections.toSaveReminder())
+
     }
+
     @Test
-    fun reminderIsShownInRecyclerView() {
-        // same here we are blocking the thread
+    fun reminderDisplayed() {
+        val remind = ReminderDTO("1", "2", "3", 111.1, 120.9)
         runBlocking {
-            // GIVEN - one reminder
-            val reminder = ReminderDTO(
-                "my location",
-                "description",
-                "location1",
-                11.0,
-                11.0,
-                "random1"
-            )
-            // save reminder
-            repo.saveReminder(reminder)
-
-            // WHEN
-            val scenario =  launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-            dataBindingIdlingResource.monitorFragment(scenario)
-
-            // THEN
-            onView(withText(reminder.title)).check(matches(isDisplayed()))
-            onView(withText(reminder.location)).check(matches(isDisplayed()))
-            onView(withText(reminder.description)).check((matches(isDisplayed())))
+            reminderDataSource.saveReminder(remind)
         }
+        launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        onView(withText(remind.title)).check(matches(isDisplayed()))
+        onView(withText(remind.description)).check(matches(isDisplayed()))
+        onView(withText(remind.location)).check(matches(isDisplayed()))
     }
 }

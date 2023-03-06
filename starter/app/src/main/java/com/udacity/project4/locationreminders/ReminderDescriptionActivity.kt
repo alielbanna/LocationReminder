@@ -6,25 +6,23 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.udacity.project4.R
-import com.udacity.project4.databinding.ActivityReminderDescriptionBinding
 import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 
 /**
  * Activity that displays the reminder details after the user clicks on the notification
  */
 class ReminderDescriptionActivity : AppCompatActivity() {
-    companion object {
-        private const val EXTRA_ReminderDataItem = "EXTRA_ReminderDataItem"
 
-        //        receive the reminder object after the user clicks on the notification
+    private lateinit var binding: com.udacity.project4.databinding.ActivityReminderDescriptionBinding
+    companion object {
+        private const val ReminderDataItem = "Reminder Data Item"
         fun newIntent(context: Context, reminderDataItem: ReminderDataItem): Intent {
             val intent = Intent(context, ReminderDescriptionActivity::class.java)
-            intent.putExtra(EXTRA_ReminderDataItem, reminderDataItem)
+            intent.putExtra(ReminderDataItem, reminderDataItem)
             return intent
         }
     }
 
-    private lateinit var binding: ActivityReminderDescriptionBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,8 +30,16 @@ class ReminderDescriptionActivity : AppCompatActivity() {
             this,
             R.layout.activity_reminder_description
         )
-        val reminderDataItem = this.intent.getSerializableExtra(EXTRA_ReminderDataItem) as ReminderDataItem
-        binding.reminderDataItem = reminderDataItem
+        binding.doneButton.setOnClickListener {
+            val toList=Intent(this,RemindersActivity::class.java)
+            startActivity(toList)
+        }
+
+
+        if (!intent.hasExtra(ReminderDataItem)) return
+        val remind_Dataitem:ReminderDataItem=intent.getSerializableExtra(ReminderDataItem)as ReminderDataItem
+        binding.reminderDataItem=remind_Dataitem
+        binding.executePendingBindings()
 
     }
 }

@@ -2,11 +2,13 @@ package com.udacity.project4.locationreminders.reminderslist
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import androidx.databinding.DataBindingUtil
-import com.google.firebase.auth.FirebaseAuth
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import com.firebase.ui.auth.AuthUI
 import com.udacity.project4.R
+import com.udacity.project4.authentication.AuthenticationViewModel
 import com.udacity.project4.authentication.AuthenticationActivity
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
@@ -14,13 +16,16 @@ import com.udacity.project4.databinding.FragmentRemindersBinding
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import com.udacity.project4.utils.setTitle
 import com.udacity.project4.utils.setup
-import kotlinx.android.synthetic.main.fragment_reminders.*
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ReminderListFragment : BaseFragment() {
+
     //use Koin to retrieve the ViewModel instance
+
     override val _viewModel: RemindersListViewModel by viewModel()
     private lateinit var binding: FragmentRemindersBinding
+
+    val viewModel by viewModels<AuthenticationViewModel>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -36,11 +41,7 @@ class ReminderListFragment : BaseFragment() {
         setDisplayHomeAsUpEnabled(false)
         setTitle(getString(R.string.app_name))
 
-        binding.refreshLayout.setOnRefreshListener {
-            _viewModel.loadReminders()
-            refreshLayout.isRefreshing = false;
-
-        }
+        binding.refreshLayout.setOnRefreshListener { _viewModel.loadReminders() }
 
         return binding.root
     }
@@ -48,19 +49,45 @@ class ReminderListFragment : BaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = this
+        viewModel.authenticationState.observe(viewLifecycleOwner, Observer { state ->
+            if (state != AuthenticationViewModel.AuthenticationState.AUTHENTICATED) {
+                val int = Intent(requireActivity(), AuthenticationActivity::class.java)
+                int.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(int)
+                requireActivity().finish()
+            }
+        })
         setupRecyclerView()
         binding.addReminderFAB.setOnClickListener {
-            navigateToAddReminder()
+            goToAddReminder()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        //load the reminders list on the ui
         _viewModel.loadReminders()
     }
 
-    private fun navigateToAddReminder() {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.logout) {
+            AuthUI.getInstance().signOut(requireContext())
+            val logout = Intent(activity, AuthenticationActivity::class.java)
+            startActivity(logout)
+            activity?.finish()
+
+
+        }
+        return super.onOptionsItemSelected(item)
+
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+//        display logout as menu item
+        inflater.inflate(R.menu.main_menu, menu)
+    }
+
+    private fun goToAddReminder() {
         //use the navigationCommand live data to navigate between the fragments
         _viewModel.navigationCommand.postValue(
             NavigationCommand.To(
@@ -73,32 +100,6 @@ class ReminderListFragment : BaseFragment() {
         val adapter = RemindersListAdapter {
         }
 
-//        setup the recycler view using the extension function
         binding.reminderssRecyclerView.setup(adapter)
     }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.logout -> {
-                FirebaseAuth.getInstance().signOut()
-                Log.d("log out", "log out success: ")
-                backToAuthentication()
-            }
-        }
-        return super.onOptionsItemSelected(item)
-
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-//        display logout as menu item
-        inflater.inflate(R.menu.main_menu, menu)
-    }
-
-    private fun backToAuthentication() {
-        val intent = Intent(activity, AuthenticationActivity::class.java)
-        startActivity(intent)
-        requireActivity().finish()
-    }
-
 }
