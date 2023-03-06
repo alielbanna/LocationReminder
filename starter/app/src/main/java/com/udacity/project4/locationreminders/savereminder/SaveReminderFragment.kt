@@ -62,14 +62,10 @@ class SaveReminderFragment : BaseFragment() {
 
     private lateinit var contxt: Context
     private val geofencePendingIntent: PendingIntent by lazy {
-        val intent = Intent(this.contxt as Activity, GeofenceBroadcastReceiver::class.java)
-        intent.action = ACTION_GEOFENCE_EVENT
-        PendingIntent.getBroadcast(
-            this.contxt,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
+
+        val intent = Intent(activity, GeofenceBroadcastReceiver::class.java)
+        intent.action="EVENT.ACTION_GEOFENCE"
+        PendingIntent.getBroadcast(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     override fun onCreateView(
